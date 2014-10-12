@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * A model, involving individual types and reactions between those types.
+ * 
  * @author Tim Vaughan (tgvaughan@gmail.com)
  */
 public class Model extends BEASTObject {

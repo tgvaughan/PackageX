@@ -26,9 +26,12 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multiset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
+ * A reaction involving individuals of different types.
  *
  * @author Tim Vaughan (tgvaughan@gmail.com)
  */
@@ -48,6 +51,7 @@ public class Reaction extends BEASTObject {
 
     private Multiset<Type> reactants, products;
     private Multimap<Type, Multiset<Type>> offspringMap;
+    private Map<Type, Integer> deltas;
 
     @Override
     public void initAndValidate() {
@@ -74,6 +78,59 @@ public class Reaction extends BEASTObject {
             offspringSet.addAll(idxMap.get(idx));
             offspringMap.put(reactant, offspringSet);
         }
+
+        // Calculate deltas
+        deltas = new HashMap<>();
+        for (Type type : reactants.elementSet())
+            deltas.put(type, reactants.count(type));
+
+        for (Type type : products.elementSet()) {
+            int delta = 0;
+            if (deltas.containsKey(type))
+                delta = deltas.get(type);
+
+            delta -= products.count(type);
+
+            if (delta==0) {
+                if (deltas.containsKey(type))
+                    deltas.remove(type);
+            } else
+                deltas.put(type, delta);
+        }
+    }
+
+    /**
+     * Calculate and retrieve reaction propensity for given state.
+     * 
+     * @param state
+     * @return reaction propensity
+     */
+    public double getPropensity(SystemState state) {
+        double prop = rateInput.get().getValue();
+
+        for (Type reactant : reactants.elementSet()) {
+            int m = reactants.count(reactant);
+            long N = state.get(reactant);
+            for (long n = N; n>N-m && n>=0; n--) {
+                prop *= n;
+            }
+
+            // Early bail-out if propensity has a zero element
+            if (prop==0)
+                return 0;
+        }
+
+        return prop;
+    }
+
+    /**
+     * Increment the given state by applying this reaction.
+     * 
+     * @param state state to increment
+     */
+    public void incrementState(SystemState state) {
+        for (Type type : deltas.keySet())
+            state.put(type, state.get(type)+deltas.get(type));
     }
 
     @Override

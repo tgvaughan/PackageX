@@ -19,6 +19,7 @@ package packagex;
 import beast.core.BEASTObject;
 
 /**
+ * A type of individual in the model.
  *
  * @author Tim Vaughan (tgvaughan@gmail.com)
  */
