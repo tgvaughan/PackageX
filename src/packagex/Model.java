@@ -33,10 +33,10 @@ public class Model extends BEASTObject {
         Validate.REQUIRED);
 
     public Input<List<Type>> typesInput = new Input<>("type",
-        "Specifies a type in the model.", new ArrayList<Type>());
+        "Specifies a type in the model.", new ArrayList<>());
 
     public Input<List<Reaction>> reactionsInput = new Input<>("reaction",
-        "Specifies a reaction in the model.", new ArrayList<Reaction>());
+        "Specifies a reaction in the model.", new ArrayList<>());
 
     @Override
     public void initAndValidate() throws Exception { }

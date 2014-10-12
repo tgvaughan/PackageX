@@ -21,6 +21,9 @@ import beast.core.Input;
 import beast.core.Input.Validate;
 import beast.core.parameter.IntegerParameter;
 import beast.core.parameter.RealParameter;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Multiset;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,10 +46,70 @@ public class Reaction extends BEASTObject {
     public Input<IntegerParameter> p2rMapInput =
         new Input<>("p2rMap", "Product to reactant map.");
 
-    private Multiset<Type> reactants;
+    private Multiset<Type> reactants, products;
+    private Multimap<Type, Multiset<Type>> offspringMap;
 
     @Override
     public void initAndValidate() {
+
+        reactants = HashMultiset.create();
+        for (Type type : reactantsInput.get()) {
+            reactants.add(type);
+        }
+
+        products = HashMultiset.create();
+        for (Type type : productsInput.get()) {
+            products.add(type);
+        }
+
+        Multimap<Integer, Type> idxMap = HashMultimap.create();
+        for (int i=0; i<productsInput.get().size(); i++) {
+            idxMap.put(p2rMapInput.get().getValue(i), productsInput.get().get(i));
+        }
+
+        offspringMap = HashMultimap.create();
+        for (int idx : idxMap.keySet()) {
+            Type reactant = reactantsInput.get().get(idx);
+            Multiset<Type> offspringSet = HashMultiset.create();
+            offspringSet.addAll(idxMap.get(idx));
+            offspringMap.put(reactant, offspringSet);
+        }
     }
-    
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+
+        if (reactants.isEmpty())
+            sb.append("0");
+        else {
+            boolean isFirst = true;
+            for (Type reactant : reactants)  {
+                if (isFirst)
+                    isFirst = false;
+                else
+                    sb.append(" + ");
+
+                sb.append(reactant.getID());
+            }
+        }
+
+        sb.append(" -> ");
+
+        if (products.isEmpty())
+            sb.append("0");
+        else {
+            boolean isFirst = true;
+            for (Type product : products)  {
+                if (isFirst)
+                    isFirst = false;
+                else
+                    sb.append(" + ");
+
+                sb.append(product.getID());
+            }
+        }
+
+        return sb.toString();
+    }
 }
