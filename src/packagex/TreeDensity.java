@@ -17,6 +17,8 @@
 package packagex;
 
 import beast.core.Distribution;
+import beast.core.Input;
+import beast.core.Input.Validate;
 import beast.core.State;
 import java.util.List;
 import java.util.Random;
@@ -27,6 +29,9 @@ import java.util.Random;
  * @author Tim Vaughan (tgvaughan@gmail.com)
  */
 public class TreeDensity extends Distribution {
+
+    public Input<TypedTree> treeInput = new Input<>(
+        "typedTree", "Tree with nodes coloured by type.", Validate.REQUIRED);
 
     @Override
     public double calculateLogP() throws Exception {
@@ -45,9 +50,18 @@ public class TreeDensity extends Distribution {
         return null;
     }
 
+    /**
+     * I don't like this method of drawing a sample, as it doesn't allow users
+     * to specify _what_ should be initialized. (E.g. what if my state includes
+     * multiple TypedTrees?)
+     * 
+     * Use RandomTypedTree instead.
+     *
+     * @param state
+     * @param random
+     */
     @Override
     public void sample(State state, Random random) {
-        // TODO: Implement this - shouldn't be too hard!
     }
     
 }
