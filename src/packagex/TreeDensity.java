@@ -20,9 +20,12 @@ import beast.core.Distribution;
 import beast.core.Input;
 import beast.core.Input.Validate;
 import beast.core.State;
+import beast.evolution.tree.Node;
 import beast.util.Randomizer;
 import com.google.common.collect.Lists;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -42,6 +45,10 @@ public class TreeDensity extends Distribution {
         "nParticles", "Number of particles to use in SMC calculation.",
         Validate.REQUIRED);
 
+    private class ParticleState extends SystemState {
+        public Map<TypedNode, Type> lineageTypes = new HashMap<>();
+    }
+
     Model model;
     TreeEventList eventList;
     int nParticles;
@@ -58,8 +65,8 @@ public class TreeDensity extends Distribution {
         logP = 0.0;
 
         List<Double> particleWeights = Lists.newArrayList();
-        List<SystemState> particleStates = Lists.newArrayList();
-        List<SystemState> particleStatesNew = Lists.newArrayList();
+        List<ParticleState> particleStates = Lists.newArrayList();
+        List<ParticleState> particleStatesNew = Lists.newArrayList();
         
         // Initialize particles
         for (int p=0; p<nParticles; p++)
@@ -131,7 +138,7 @@ public class TreeDensity extends Distribution {
      * @param finalTreeEvent
      * @return conditional prob of tree interval under trajectory
      */
-    private double updateParticle(SystemState particleState,
+    private double updateParticle(ParticleState particleState,
         double startTime, int lineages, TreeEvent finalTreeEvent) {
         double conditionalP = 1.0;
 
