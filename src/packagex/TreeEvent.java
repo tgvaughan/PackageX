@@ -16,6 +16,9 @@
  */
 package packagex;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Class representing events on a tree.
  *
@@ -26,7 +29,12 @@ public class TreeEvent {
     public boolean isLeaf;
 
     public Type type;
-    public int multiplicity = 1;
     public double time;
+
+    public List<TypedNode> nodes = new ArrayList<>();
+
+    public int getMultiplicity() {
+        return nodes.size();
+    }
     
 }

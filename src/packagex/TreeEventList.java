@@ -64,7 +64,11 @@ public class TreeEventList extends CalculationNode {
         dirty = true;
     }
 
-       /**
+    public TypedTree getTree() {
+        return tree;
+    }
+
+    /**
      * Ensure list of tree events is up to date.
      */
     public void updateEventList() {
@@ -75,6 +79,7 @@ public class TreeEventList extends CalculationNode {
             TypedNode tnode = (TypedNode)node;
 
             TreeEvent event = new TreeEvent();
+            event.nodes.add(tnode);
             event.isLeaf = tnode.isLeaf();
             event.type = tnode.getType();
             event.time = getTimeFromHeight(node.getHeight());
@@ -97,7 +102,7 @@ public class TreeEventList extends CalculationNode {
             if (Math.abs(eventList.get(i).time-eventList.get(i-1).time)<tolerance
                     && eventList.get(i).isLeaf == eventList.get(i-1).isLeaf
                     && eventList.get(i).type == eventList.get(i-1).type) {
-                eventList.get(i-1).multiplicity += 1;
+                eventList.get(i-1).nodes.addAll(eventList.get(i).nodes);
                 eventList.remove(i);
                 i -= 1;
             }

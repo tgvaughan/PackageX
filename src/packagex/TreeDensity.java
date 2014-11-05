@@ -20,7 +20,6 @@ import beast.core.Distribution;
 import beast.core.Input;
 import beast.core.Input.Validate;
 import beast.core.State;
-import beast.evolution.tree.Node;
 import beast.util.Randomizer;
 import com.google.common.collect.Lists;
 import java.util.HashMap;
@@ -45,9 +44,30 @@ public class TreeDensity extends Distribution {
         "nParticles", "Number of particles to use in SMC calculation.",
         Validate.REQUIRED);
 
+
     private class ParticleState extends SystemState {
         public Map<TypedNode, Type> lineageTypes = new HashMap<>();
+
+        public ParticleState() { }
+
+        public ParticleState(SystemState state, TypedNode node) {
+            lineageTypes.put(node, node.getType());
+            stateMap.putAll(state.stateMap);
+        }
+
+        /**
+         * @return a new copy of this state.
+         */
+        @Override
+        ParticleState copy() {
+            ParticleState stateCopy = new ParticleState();
+            stateCopy.stateMap.putAll(stateMap);
+            stateCopy.lineageTypes.putAll(lineageTypes);
+            
+            return stateCopy;
+        }
     }
+
 
     Model model;
     TreeEventList eventList;
@@ -70,7 +90,8 @@ public class TreeDensity extends Distribution {
         
         // Initialize particles
         for (int p=0; p<nParticles; p++)
-            particleStates.add(model.getInitialState());
+            particleStates.add(new ParticleState(model.getInitialState(),
+                (TypedNode)eventList.getTree().getRoot()));
         
         double t = 0.0;
         int k = 1;
@@ -108,19 +129,19 @@ public class TreeDensity extends Distribution {
                 if (pChoice == nParticles)
                     System.err.println("sumOfWeights: " + sumOfWeights);
                 
-                particleStatesNew.add(particleStates.get(pChoice).copy());
+                particleStatesNew.add(particleStates.get(pChoice).copy()); // TODO: banish evil
             }
             
             // Switch particleStates and particleStatesNew
-            List<SystemState> temp = particleStates;
+            List<ParticleState> temp = particleStates;
             particleStates = particleStatesNew;
             particleStatesNew = temp;
             
             // Update lineage counter
             if (!treeEvent.isLeaf)
-                k += 1;
+                k += treeEvent.getMultiplicity();
             else
-                k -= treeEvent.multiplicity;
+                k -= treeEvent.getMultiplicity();
             
             // Update start interval time
             t = treeEvent.time;
