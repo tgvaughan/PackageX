@@ -20,6 +20,8 @@ import beast.core.Distribution;
 import beast.core.Input;
 import beast.core.Input.Validate;
 import beast.core.State;
+import beast.util.Randomizer;
+import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.Random;
 
@@ -30,14 +32,110 @@ import java.util.Random;
  */
 public class TreeDensity extends Distribution {
 
-    public Input<TypedTree> treeInput = new Input<>(
-        "typedTree", "Tree with nodes coloured by type.", Validate.REQUIRED);
+    public Input<Model> modelInput = new Input<>(
+        "mode", "Tree-generating model.", Validate.REQUIRED);
+
+    public Input<TreeEventList> treeEventListInput = new Input<>(
+        "treeEventList", "Tree event list.", Validate.REQUIRED);
+
+    public Input<Integer> nParticlesInput = new Input<>(
+        "nParticles", "Number of particles to use in SMC calculation.",
+        Validate.REQUIRED);
+
+    Model model;
+    TreeEventList eventList;
+    int nParticles;
+
+    @Override
+    public void initAndValidate() throws Exception {
+        model = modelInput.get();
+        eventList = treeEventListInput.get();
+        nParticles = nParticlesInput.get();
+    }
 
     @Override
     public double calculateLogP() throws Exception {
         logP = 0.0;
 
+        List<Double> particleWeights = Lists.newArrayList();
+        List<SystemState> particleStates = Lists.newArrayList();
+        List<SystemState> particleStatesNew = Lists.newArrayList();
+        
+        // Initialize particles
+        for (int p=0; p<nParticles; p++)
+            particleStates.add(model.getInitialState());
+        
+        double t = 0.0;
+        int k = 1;
+        for (TreeEvent treeEvent : eventList.getEventList()) {
+            
+            // Update particles
+            particleWeights.clear();
+            double sumOfWeights = 0.0;
+            for (int p=0; p<nParticles; p++) {
+                
+                double newWeight = updateParticle(particleStates.get(p), t, k, treeEvent);
+                
+                particleWeights.add(newWeight);
+                sumOfWeights += newWeight;
+            }
+            
+            // Update marginal likelihood estimate
+            logP += Math.log(sumOfWeights/nParticles);
+            
+            if (!(sumOfWeights>0.0))
+                return Double.NEGATIVE_INFINITY;
+            
+            // Sample particle with replacement
+            particleStatesNew.clear();
+            for (int p=0; p<nParticles; p++) {
+                double u = Randomizer.nextDouble()*sumOfWeights;
+                
+                int pChoice;
+                for (pChoice = 0; pChoice<nParticles; pChoice++) {
+                    u -= particleWeights.get(pChoice);
+                    if (u<0.0)
+                        break;
+                }
+                
+                if (pChoice == nParticles)
+                    System.err.println("sumOfWeights: " + sumOfWeights);
+                
+                particleStatesNew.add(particleStates.get(pChoice).copy());
+            }
+            
+            // Switch particleStates and particleStatesNew
+            List<SystemState> temp = particleStates;
+            particleStates = particleStatesNew;
+            particleStatesNew = temp;
+            
+            // Update lineage counter
+            if (!treeEvent.isLeaf)
+                k += 1;
+            else
+                k -= treeEvent.multiplicity;
+            
+            // Update start interval time
+            t = treeEvent.time;
+        } 
+
         return logP;
+    }
+
+    /**
+     * Updates weight and state of particle.
+     *
+     * @param particleState
+     * @param startTime
+     * @param lineages
+     * @param finalTreeEvent
+     * @return conditional prob of tree interval under trajectory
+     */
+    private double updateParticle(SystemState particleState,
+        double startTime, int lineages, TreeEvent finalTreeEvent) {
+        double conditionalP = 1.0;
+
+        return conditionalP;
     }
 
     @Override

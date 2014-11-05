@@ -50,10 +50,26 @@ public class SystemState {
         return this;
     }
 
+    /**
+     * Retrieve the number of individuals of the given type in the state.
+     * 
+     * @param type
+     * @return number of individuals with given type
+     */
     long get(Type type) {
         if (stateMap.containsKey(type))
             return stateMap.get(type);
         else
             return 0;
+    }
+
+    /**
+     * @return a new copy of this state.
+     */
+    SystemState copy() {
+        SystemState stateCopy = new SystemState();
+        stateCopy.stateMap.putAll(stateMap);
+
+        return stateCopy;
     }
 }
