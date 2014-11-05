@@ -40,7 +40,22 @@ public class Model extends BEASTObject {
     public Input<List<Reaction>> reactionsInput = new Input<>("reaction",
         "Specifies a reaction in the model.", new ArrayList<>());
 
+    public Input<List<PopulationSize>> initialPopSizesInput = new Input<>(
+        "initialPopSize", "Initial population size", new ArrayList<>());
+
     @Override
     public void initAndValidate() throws Exception { }
+
+    /**
+     * @return a copy of the initial system state.
+     */
+    public SystemState getInitialState() {
+        SystemState initialState = new SystemState();
+
+        for (PopulationSize popSize : initialPopSizesInput.get())
+            initialState.put(popSize.getType(), popSize.getSize());
+
+        return initialState;
+    }
     
 }
