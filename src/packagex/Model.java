@@ -40,12 +40,6 @@ public class Model extends BEASTObject {
     public Input<List<Reaction>> reactionsInput = new Input<>("reaction",
         "Specifies a reaction in the model.", new ArrayList<>());
 
-    public Input<RealParameter> psiSamplingRateInput = new Input<>("psiSamplingRate",
-            "Rate of psi sampling.");
-
-    public Input<RealParameter> rhoSamplingRateInput = new Input<>("rhoSamplingRate",
-            "Rate of rho sampling.");
-
     @Override
     public void initAndValidate() throws Exception { }
     

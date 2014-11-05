@@ -25,13 +25,19 @@ public class SystemEvent {
 
     private Reaction reaction;
     private double time;
+    private int multiplicity;
 
     public SystemEvent() {
     }
 
-    public SystemEvent(Reaction reaction, double time) {
+    public SystemEvent(Reaction reaction, double time, int multiplicity) {
         this.reaction = reaction;
         this.time = time;
+        this.multiplicity = multiplicity;
+    }
+
+    public SystemEvent(Reaction reaction, double time) {
+        this(reaction, time, 1);
     }
     
 
@@ -47,5 +53,12 @@ public class SystemEvent {
      */
     public double getTime() {
         return time;
+    }
+
+    /**
+     * @return multiplicity of reaction.
+     */
+    public int getMultiplicity() {
+        return multiplicity;
     }
 }

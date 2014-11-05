@@ -25,6 +25,11 @@ import beast.core.BEASTObject;
  */
 public class Type extends BEASTObject {
 
+    /**
+     * The type used to represent sampled individuals.
+     */
+    public static Type SAMPLED = new Type();
+
     @Override
     public void initAndValidate() throws Exception { }
     
