@@ -20,8 +20,11 @@ import beast.core.Distribution;
 import beast.core.Input;
 import beast.core.Input.Validate;
 import beast.core.State;
+import beast.evolution.tree.Node;
 import beast.util.Randomizer;
 import com.google.common.collect.Lists;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,8 +40,8 @@ public class TreeDensity extends Distribution {
     public Input<Model> modelInput = new Input<>(
         "mode", "Tree-generating model.", Validate.REQUIRED);
 
-    public Input<TreeEventList> treeEventListInput = new Input<>(
-        "treeEventList", "Tree event list.", Validate.REQUIRED);
+    public Input<TypedTree> treeInput = new Input<>(
+        "typedTree", "Typed phylogenetic tree.", Validate.REQUIRED);
 
     public Input<Integer> nParticlesInput = new Input<>(
         "nParticles", "Number of particles to use in SMC calculation.",
@@ -55,28 +58,24 @@ public class TreeDensity extends Distribution {
             stateMap.putAll(state.stateMap);
         }
 
-        /**
-         * @return a new copy of this state.
-         */
-        @Override
-        ParticleState copy() {
-            ParticleState stateCopy = new ParticleState();
-            stateCopy.stateMap.putAll(stateMap);
-            stateCopy.lineageTypes.putAll(lineageTypes);
-            
-            return stateCopy;
+        public void assignFrom(ParticleState other) {
+            stateMap.clear();
+            stateMap.putAll(other.stateMap);
+
+            lineageTypes.clear();
+            lineageTypes.putAll(other.lineageTypes);
         }
     }
 
 
     Model model;
-    TreeEventList eventList;
+    TypedTree tree;
     int nParticles;
 
     @Override
     public void initAndValidate() throws Exception {
         model = modelInput.get();
-        eventList = treeEventListInput.get();
+        tree = treeInput.get();
         nParticles = nParticlesInput.get();
     }
 
@@ -89,20 +88,30 @@ public class TreeDensity extends Distribution {
         List<ParticleState> particleStatesNew = Lists.newArrayList();
         
         // Initialize particles
-        for (int p=0; p<nParticles; p++)
+        for (int p=0; p<nParticles; p++) {
             particleStates.add(new ParticleState(model.getInitialState(),
-                (TypedNode)eventList.getTree().getRoot()));
+                (TypedNode)tree.getRoot()));
+            particleStatesNew.add(new ParticleState(model.getInitialState(),
+                (TypedNode)tree.getRoot()));
+        }
+
+        // Assemble sorted node list:
+        List<Node> nodeList = Lists.newArrayList(tree.getNodesAsArray());
+        nodeList.sort((Node o1, Node o2) -> {
+            return (int)(o1.getHeight() - o2.getHeight());
+        });
         
         double t = 0.0;
         int k = 1;
-        for (TreeEvent treeEvent : eventList.getEventList()) {
+        for (Node node : nodeList) {
+            TypedNode typedNode = (TypedNode)node;
             
             // Update particles
             particleWeights.clear();
             double sumOfWeights = 0.0;
             for (int p=0; p<nParticles; p++) {
                 
-                double newWeight = updateParticle(particleStates.get(p), t, k, treeEvent);
+                double newWeight = updateParticle(particleStates.get(p), t, k, typedNode);
                 
                 particleWeights.add(newWeight);
                 sumOfWeights += newWeight;
@@ -129,7 +138,7 @@ public class TreeDensity extends Distribution {
                 if (pChoice == nParticles)
                     System.err.println("sumOfWeights: " + sumOfWeights);
                 
-                particleStatesNew.add(particleStates.get(pChoice).copy()); // TODO: banish evil
+                particleStatesNew.get(p).assignFrom(particleStates.get(pChoice));
             }
             
             // Switch particleStates and particleStatesNew
@@ -160,7 +169,7 @@ public class TreeDensity extends Distribution {
      * @return conditional prob of tree interval under trajectory
      */
     private double updateParticle(ParticleState particleState,
-        double startTime, int lineages, TreeEvent finalTreeEvent) {
+        double startTime, int lineages, TypedNode nextNode) {
         double conditionalP = 1.0;
 
         return conditionalP;

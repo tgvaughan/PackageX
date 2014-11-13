@@ -62,14 +62,4 @@ public class SystemState {
         else
             return 0;
     }
-
-    /**
-     * @return a new copy of this state.
-     */
-    SystemState copy() {
-        SystemState stateCopy = new SystemState();
-        stateCopy.stateMap.putAll(stateMap);
-
-        return stateCopy;
-    }
 }
