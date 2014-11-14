@@ -184,16 +184,32 @@ public class TreeDensity extends Distribution {
     }
 
     /**
+     * Propagate particle over interval.
      * 
-     * @param particleState
-     * @param startTime
-     * @param lineages
-     * @param nodesInvolved
+     * @param particleState State at the start of the interval.
+     * @param startTime Time at the start of the interval.
+     * @param lineages Number of ancestral lineages extant at the
+     *                 start of the interval.
+     * @param nodesInvolved List of nodes involved in the reaction
+     *                      terminating the interval.
      * @return 
      */
     private double updateParticle(ParticleState particleState,
         double startTime, int lineages, List<TypedNode> nodesInvolved) {
         double conditionalP = 1.0;
+
+        double t = startTime;
+        double endTime = model.getNodeTime(nodesInvolved.get(0));
+
+        while (true) {
+
+            // Calculate reaction propensities
+            
+            // Increment time
+
+            // Stop if t>endTime || t<nextKnownReactionTime
+
+        }
 
         return conditionalP;
     }
