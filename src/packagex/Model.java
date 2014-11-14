@@ -20,6 +20,7 @@ import beast.core.BEASTObject;
 import beast.core.Input;
 import beast.core.Input.Validate;
 import beast.core.parameter.RealParameter;
+import beast.evolution.tree.Node;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,4 +59,13 @@ public class Model extends BEASTObject {
         return initialState;
     }
     
+    /**
+     * Obtain (forward) time of node relative to the model origin.
+     * 
+     * @param node
+     * @return node time
+     */
+    public double getNodeTime(Node node) {
+        return originInput.get().getValue() - node.getHeight();
+    }
 }

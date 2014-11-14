@@ -47,6 +47,22 @@ public class TreeDensity extends Distribution {
         "nParticles", "Number of particles to use in SMC calculation.",
         Validate.REQUIRED);
 
+    /**
+     * Tolerance used when comparing times.
+     */
+    public static double TOLERANCE = 1e-10;
+
+    /**
+     * Determine whether ages of nodes a and b are equivalent to
+     * within tolerance TOLERANCE.
+     * 
+     * @param a
+     * @param b
+     * @return equivalence
+     */
+    public static boolean nodesContemp(Node a, Node b) {
+        return Math.abs(a.getHeight()-b.getHeight()) < TOLERANCE;
+    }
 
     private class ParticleState extends SystemState {
         public Map<TypedNode, Type> lineageTypes = new HashMap<>();
@@ -67,7 +83,6 @@ public class TreeDensity extends Distribution {
         }
     }
 
-
     Model model;
     TypedTree tree;
     int nParticles;
@@ -83,16 +98,18 @@ public class TreeDensity extends Distribution {
     public double calculateLogP() throws Exception {
         logP = 0.0;
 
-        List<Double> particleWeights = Lists.newArrayList();
-        List<ParticleState> particleStates = Lists.newArrayList();
-        List<ParticleState> particleStatesNew = Lists.newArrayList();
+        double[] particleWeights = new double[nParticles];
+        ParticleState[] particleStates = new ParticleState[nParticles];
+        ParticleState[] particleStatesNew = new ParticleState[nParticles];
+
+        List<TypedNode> nodesInvolved = new ArrayList<>();
         
         // Initialize particles
         for (int p=0; p<nParticles; p++) {
-            particleStates.add(new ParticleState(model.getInitialState(),
-                (TypedNode)tree.getRoot()));
-            particleStatesNew.add(new ParticleState(model.getInitialState(),
-                (TypedNode)tree.getRoot()));
+            particleStates[p] = new ParticleState(model.getInitialState(),
+                (TypedNode)tree.getRoot());
+            particleStatesNew[p] = new ParticleState(model.getInitialState(),
+                (TypedNode)tree.getRoot());
         }
 
         // Assemble sorted node list:
@@ -103,17 +120,20 @@ public class TreeDensity extends Distribution {
         
         double t = 0.0;
         int k = 1;
-        for (Node node : nodeList) {
-            TypedNode typedNode = (TypedNode)node;
+        for (int nidx=0; nidx<nodeList.size(); nidx++) {
+            nodesInvolved.add((TypedNode)nodeList.get(nidx));
+
+            if (nidx<nodeList.size()-1 &&
+                    nodesContemp(nodeList.get(nidx+1), nodeList.get(nidx)))
+                continue;
             
             // Update particles
-            particleWeights.clear();
             double sumOfWeights = 0.0;
             for (int p=0; p<nParticles; p++) {
                 
-                double newWeight = updateParticle(particleStates.get(p), t, k, typedNode);
+                double newWeight = updateParticle(particleStates[p], t, k, nodesInvolved);
                 
-                particleWeights.add(newWeight);
+                particleWeights[p] = newWeight;
                 sumOfWeights += newWeight;
             }
             
@@ -124,13 +144,12 @@ public class TreeDensity extends Distribution {
                 return Double.NEGATIVE_INFINITY;
             
             // Sample particle with replacement
-            particleStatesNew.clear();
             for (int p=0; p<nParticles; p++) {
                 double u = Randomizer.nextDouble()*sumOfWeights;
                 
                 int pChoice;
                 for (pChoice = 0; pChoice<nParticles; pChoice++) {
-                    u -= particleWeights.get(pChoice);
+                    u -= particleWeights[pChoice];
                     if (u<0.0)
                         break;
                 }
@@ -138,38 +157,42 @@ public class TreeDensity extends Distribution {
                 if (pChoice == nParticles)
                     System.err.println("sumOfWeights: " + sumOfWeights);
                 
-                particleStatesNew.get(p).assignFrom(particleStates.get(pChoice));
+                particleStatesNew[p].assignFrom(particleStates[pChoice]);
             }
             
             // Switch particleStates and particleStatesNew
-            List<ParticleState> temp = particleStates;
+            ParticleState[] temp = particleStates;
             particleStates = particleStatesNew;
             particleStatesNew = temp;
             
             // Update lineage counter
-            if (!treeEvent.isLeaf)
-                k += treeEvent.getMultiplicity();
-            else
-                k -= treeEvent.getMultiplicity();
-            
+            for (TypedNode node : nodesInvolved) {
+                if (node.isLeaf()) {
+                    k -= 1;
+                } else {
+                    k += 1;
+                }
+            }
+           
             // Update start interval time
-            t = treeEvent.time;
+            t = model.getNodeTime(nodesInvolved.get(0));
+
+            nodesInvolved.clear();
         } 
 
         return logP;
     }
 
     /**
-     * Updates weight and state of particle.
-     *
+     * 
      * @param particleState
      * @param startTime
      * @param lineages
-     * @param finalTreeEvent
-     * @return conditional prob of tree interval under trajectory
+     * @param nodesInvolved
+     * @return 
      */
     private double updateParticle(ParticleState particleState,
-        double startTime, int lineages, TypedNode nextNode) {
+        double startTime, int lineages, List<TypedNode> nodesInvolved) {
         double conditionalP = 1.0;
 
         return conditionalP;
