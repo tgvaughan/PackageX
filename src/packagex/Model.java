@@ -22,7 +22,9 @@ import beast.core.Input.Validate;
 import beast.core.parameter.RealParameter;
 import beast.evolution.tree.Node;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A model, involving individual types and reactions between those types.
@@ -44,6 +46,9 @@ public class Model extends BEASTObject {
     public Input<List<PopulationSize>> initialPopSizesInput = new Input<>(
         "initialPopSize", "Initial population size", new ArrayList<>());
 
+    Map<Reaction, Double> reactionPropensities = new HashMap<>();
+    double totalReactionPropensity;
+
     @Override
     public void initAndValidate() throws Exception { }
 
@@ -57,6 +62,35 @@ public class Model extends BEASTObject {
             initialState.put(popSize.getType(), popSize.getSize());
 
         return initialState;
+    }
+
+    /**
+     * Calculate reaction propensities under given state.
+     * 
+     * @param state system state
+     */
+    public void calculatePropensities(SystemState state) {
+        reactionPropensities.clear();
+        totalReactionPropensity = 0.0;
+        for (Reaction react : reactionsInput.get()) {
+            double thisProp = react.getPropensity(state);
+            reactionPropensities.put(react, thisProp);
+            totalReactionPropensity += thisProp;
+        }
+    }
+
+    /**
+     * @return previously computed reaction propensities.
+     */
+    public Map<Reaction, Double> getPropensities() {
+        return reactionPropensities;
+    }
+
+    /**
+     * @return total of previously computed reaction propensities.
+     */
+    public double getTotalPropensity() {
+        return totalReactionPropensity;
     }
     
     /**

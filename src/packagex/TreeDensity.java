@@ -204,10 +204,14 @@ public class TreeDensity extends Distribution {
         while (true) {
 
             // Calculate reaction propensities
+            model.calculatePropensities(particleState);
             
             // Increment time
+            t += Randomizer.nextExponential(model.getTotalPropensity());
 
             // Stop if t>endTime || t<nextKnownReactionTime
+            if (t>endTime)
+                break;
 
         }
 

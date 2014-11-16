@@ -19,6 +19,7 @@ package packagex;
 import beast.core.Input;
 import beast.core.Input.Validate;
 import beast.core.parameter.RealParameter;
+import beast.math.Binomial;
 import beast.util.Randomizer;
 
 /**
@@ -41,6 +42,39 @@ public class MultiReaction extends ProtoReaction {
 
     public double getReactionProbability() {
         return reactionProbabilityInput.get().getValue();
+    }
+
+    /**
+     * Determine probability of a given number of this reaction occurring.
+     * 
+     * @param count number of times reaction occurs
+     * @param state current system state
+     * @return probability of this count
+     */
+    public double getReactCountProb(long count, SystemState state) {
+
+        long maxCount = getMaxReactCount(state);
+        double p = getReactionProbability();
+
+        return Math.exp(Math.log(Binomial.choose(maxCount, count))
+            + count*Math.log(p)
+            + (maxCount-count)*Math.log(1-p));
+
+    }
+
+    /**
+     * Obtain maximum number of times this reaction can occur.
+     * 
+     * @param state current system state
+     * @return maximum reaction count
+     */
+    public long getMaxReactCount(SystemState state) {
+        long count = Long.MAX_VALUE;
+
+        for (Type type : reactants)
+            count = Math.min(count, state.get(type)/reactants.count(type));
+
+        return count;
     }
 
     @Override
