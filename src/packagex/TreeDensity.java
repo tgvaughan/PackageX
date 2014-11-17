@@ -119,7 +119,6 @@ public class TreeDensity extends Distribution {
         });
         
         double t = 0.0;
-        int k = 1;
         for (int nidx=0; nidx<nodeList.size(); nidx++) {
             nodesInvolved.add((TypedNode)nodeList.get(nidx));
 
@@ -131,7 +130,7 @@ public class TreeDensity extends Distribution {
             double sumOfWeights = 0.0;
             for (int p=0; p<nParticles; p++) {
                 
-                double newWeight = updateParticle(particleStates[p], t, k, nodesInvolved);
+                double newWeight = updateParticle(particleStates[p], t, nodesInvolved);
                 
                 particleWeights[p] = newWeight;
                 sumOfWeights += newWeight;
@@ -164,16 +163,7 @@ public class TreeDensity extends Distribution {
             ParticleState[] temp = particleStates;
             particleStates = particleStatesNew;
             particleStatesNew = temp;
-            
-            // Update lineage counter
-            for (TypedNode node : nodesInvolved) {
-                if (node.isLeaf()) {
-                    k -= 1;
-                } else {
-                    k += 1;
-                }
-            }
-           
+          
             // Update start interval time
             t = model.getNodeTime(nodesInvolved.get(0));
 
@@ -195,7 +185,7 @@ public class TreeDensity extends Distribution {
      * @return 
      */
     private double updateParticle(ParticleState particleState,
-        double startTime, int lineages, List<TypedNode> nodesInvolved) {
+        double startTime, List<TypedNode> nodesInvolved) {
         double conditionalP = 1.0;
 
         double t = startTime;
@@ -207,19 +197,42 @@ public class TreeDensity extends Distribution {
             model.calculatePropensities(particleState);
             
             // Increment time
-            double dt;
             if (model.getTotalPropensity()>0.0)
-                dt = Randomizer.nextExponential(model.getTotalPropensity());
+                t += Randomizer.nextExponential(model.getTotalPropensity());
             else
-                dt = Double.POSITIVE_INFINITY;
+                t = Double.POSITIVE_INFINITY;
 
             // Stop if t>endTime
-            if (t+dt>endTime) {
+            if (t>endTime) {
                 t = endTime;
                 break;
             }
 
+            // Choose reaction:
+            double u = Randomizer.nextDouble()*model.getTotalPropensity();
+            Reaction react = null;
+            for (Reaction thisReact : model.getPropensities().keySet()) {
+                u -= model.getPropensities().get(thisReact);
+                if (u<0) {
+                    react = thisReact;
+                    break;
+                }
+            }
+
+            if (react == null)
+                throw new IllegalStateException("Reaction choosing loop fell through!");
+
+            // Implement state change
+            react.incrementState(particleState);
+
+            // Evaluate probability that reaction affected tree
+
         }
+
+        // Incorporate probability density of population event at time of
+        // tree event
+
+        // Incorporate probability of tree event
 
         return conditionalP;
     }
