@@ -22,6 +22,7 @@ import beast.core.Input.Validate;
 import beast.core.parameter.RealParameter;
 import beast.evolution.tree.Node;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,14 +44,33 @@ public class Model extends BEASTObject {
     public Input<List<Reaction>> reactionsInput = new Input<>("reaction",
         "Specifies a reaction in the model.", new ArrayList<>());
 
+    public Input<List<MultiReaction>> multiReactionsInput = new Input<>(
+        "multiReaction", "Specifies a multi-reaction in the model",
+        new ArrayList<>());
+
     public Input<List<PopulationSize>> initialPopSizesInput = new Input<>(
         "initialPopSize", "Initial population size", new ArrayList<>());
 
     Map<Reaction, Double> reactionPropensities = new HashMap<>();
     double totalReactionPropensity;
+    List<MultiReaction> sortedMultiReactions = new ArrayList<>();
 
     @Override
-    public void initAndValidate() throws Exception { }
+    public void initAndValidate() throws Exception {
+        sortedMultiReactions.addAll(multiReactionsInput.get());
+        sortedMultiReactions.sort(new Comparator<MultiReaction>() {
+            @Override
+            public int compare(MultiReaction o1, MultiReaction o2) {
+                if (o1.getReactionTime()<o2.getReactionTime())
+                    return -1;
+
+                if (o1.getReactionTime()>o2.getReactionTime())
+                    return 1;
+
+                return 0;
+            }
+        });
+    }
 
     /**
      * @return a copy of the initial system state.
@@ -92,7 +112,19 @@ public class Model extends BEASTObject {
     public double getTotalPropensity() {
         return totalReactionPropensity;
     }
-    
+
+    /**
+     * @param currentTime
+     * @return first multi-reaction with time greater than present.
+     */
+    public MultiReaction getNextMultiReaction(double currentTime) {
+        for (MultiReaction mreact : sortedMultiReactions)
+            if (mreact.getReactionTime()>currentTime)
+                return mreact;
+
+        return null;
+    }
+
     /**
      * Obtain (forward) time of node relative to the model origin.
      * 

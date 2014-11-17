@@ -58,6 +58,9 @@ public abstract class ProtoReaction extends BEASTObject {
             reactants.add(type);
         }
 
+        if (reactants.contains(Type.SAMPLED))
+            throw new IllegalArgumentException("Cannot use the Sampled type as a reactant.");
+
         products = HashMultiset.create();
         for (Type type : productsInput.get()) {
             products.add(type);
@@ -94,6 +97,13 @@ public abstract class ProtoReaction extends BEASTObject {
             } else
                 deltas.put(type, delta);
         }
+    }
+
+    /**
+     * @return True if reaction generates sampled lineages.
+     */
+    public boolean isSampleReaction() {
+        return deltas.containsKey(Type.SAMPLED);
     }
 
     /**

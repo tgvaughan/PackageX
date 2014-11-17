@@ -207,11 +207,29 @@ public class TreeDensity extends Distribution {
             model.calculatePropensities(particleState);
             
             // Increment time
-            t += Randomizer.nextExponential(model.getTotalPropensity());
+            double dt;
+            if (model.getTotalPropensity()>0.0)
+                dt = Randomizer.nextExponential(model.getTotalPropensity());
+            else
+                dt = Double.POSITIVE_INFINITY;
+
+            MultiReaction mreact = model.getNextMultiReaction(t);
+            if (mreact != null && t+dt>mreact.getReactionTime()) {
+
+                if (mreact.isSampleReaction()) {
+                    conditionalP *= mreact.getReactCountProb(0, particleState);
+                } else {
+                    mreact.incrementState(particleState);
+                }
+                
+                t = mreact.getReactionTime();
+            }
 
             // Stop if t>endTime || t<nextKnownReactionTime
-            if (t>endTime)
+            if (t+dt>endTime) {
+                t = endTime;
                 break;
+            }
 
         }
 
