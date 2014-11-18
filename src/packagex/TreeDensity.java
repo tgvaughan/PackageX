@@ -220,7 +220,7 @@ public class TreeDensity extends Distribution {
             }
 
             if (react == null)
-                throw new IllegalStateException("Reaction choosing loop fell through!");
+                throw new IllegalStateException("Reaction-choosing loop fell through!");
 
             // Implement state change
             react.incrementState(particleState);
