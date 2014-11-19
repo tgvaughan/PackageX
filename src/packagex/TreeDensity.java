@@ -23,6 +23,7 @@ import beast.core.State;
 import beast.evolution.tree.Node;
 import beast.util.Randomizer;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multiset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -203,10 +204,8 @@ public class TreeDensity extends Distribution {
                 t = Double.POSITIVE_INFINITY;
 
             // Stop if t>endTime
-            if (t>endTime) {
-                t = endTime;
+            if (t>endTime)
                 break;
-            }
 
             // Choose reaction:
             double u = Randomizer.nextDouble()*model.getTotalPropensity();
@@ -226,6 +225,11 @@ public class TreeDensity extends Distribution {
             react.incrementState(particleState);
 
             // Evaluate probability that reaction affected tree
+            for (Type parentType : react.getOffspringMap().keySet()) {
+                for (Multiset<Type> family : react.getOffspringMap().get(parentType)) {
+                    
+                }
+            }
 
         }
 

@@ -147,6 +147,10 @@ public class Reaction extends BEASTObject {
         return getReactantPermutations(state)*rateInput.get().getValue();
     }
 
+    public Multimap<Type, Multiset<Type>>  getOffspringMap() {
+        return offspringMap;
+    }
+
     /**
      * Increment the given state by applying this reaction.
      * 
