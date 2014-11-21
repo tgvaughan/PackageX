@@ -22,25 +22,25 @@ import beast.evolution.tree.Node;
  *
  * @author Tim Vaughan (tgvaughan@gmail.com)
  */
-public class TypedNode extends Node {
+public class ReactionNode extends Node {
 
-    private Type type;
+    private Reaction reaction;
 
     /**
      * @return Type associated with this node.
      */
-    public Type getType() {
-        return type;
+    public Reaction getReaction() {
+        return reaction;
     }
 
     /**
-     * Set type associated with this node to newType.
+     * Set reaction associated with this node to newReaction.
      * 
-     * @param newType 
+     * @param newReaction
      */
-    public void setType(Type newType) {
+    public void setReaction(Reaction newReaction) {
         startEditing();
-        type = newType;
+        reaction = newReaction;
     }
 
     /**
@@ -48,14 +48,14 @@ public class TypedNode extends Node {
      */
     @Override
     public Node copy() {
-        final TypedNode node = new TypedNode();
+        final ReactionNode node = new ReactionNode();
         node.setHeight(height);
         node.setNr(labelNr);
         node.metaDataString = metaDataString;
         node.setParent(null);
         node.setID(getID());
 
-        node.setType(type);
+        node.setReaction(reaction);
 
         for (final Node child : getChildren()) {
             node.addChild(child.copy());

@@ -41,7 +41,7 @@ public class TreeDensity extends Distribution {
     public Input<Model> modelInput = new Input<>(
         "mode", "Tree-generating model.", Validate.REQUIRED);
 
-    public Input<TypedTree> treeInput = new Input<>(
+    public Input<ReactionTree> treeInput = new Input<>(
         "typedTree", "Typed phylogenetic tree.", Validate.REQUIRED);
 
     public Input<Integer> nParticlesInput = new Input<>(
@@ -66,12 +66,11 @@ public class TreeDensity extends Distribution {
     }
 
     private class ParticleState extends SystemState {
-        public Map<TypedNode, Type> lineageTypes = new HashMap<>();
+        public Map<ReactionNode, Type> lineageTypes = new HashMap<>();
 
         public ParticleState() { }
 
-        public ParticleState(SystemState state, TypedNode node) {
-            lineageTypes.put(node, node.getType());
+        public ParticleState(SystemState state) {
             stateMap.putAll(state.stateMap);
         }
 
@@ -85,7 +84,7 @@ public class TreeDensity extends Distribution {
     }
 
     Model model;
-    TypedTree tree;
+    ReactionTree tree;
     int nParticles;
 
     @Override
@@ -103,14 +102,10 @@ public class TreeDensity extends Distribution {
         ParticleState[] particleStates = new ParticleState[nParticles];
         ParticleState[] particleStatesNew = new ParticleState[nParticles];
 
-        List<TypedNode> nodesInvolved = new ArrayList<>();
-        
         // Initialize particles
         for (int p=0; p<nParticles; p++) {
-            particleStates[p] = new ParticleState(model.getInitialState(),
-                (TypedNode)tree.getRoot());
-            particleStatesNew[p] = new ParticleState(model.getInitialState(),
-                (TypedNode)tree.getRoot());
+            particleStates[p] = new ParticleState(model.getInitialState());
+            particleStatesNew[p] = new ParticleState(model.getInitialState());
         }
 
         // Assemble sorted node list:
@@ -120,18 +115,13 @@ public class TreeDensity extends Distribution {
         });
         
         double t = 0.0;
-        for (int nidx=0; nidx<nodeList.size(); nidx++) {
-            nodesInvolved.add((TypedNode)nodeList.get(nidx));
+        for (Node node : nodeList) {
 
-            if (nidx<nodeList.size()-1 &&
-                    nodesContemp(nodeList.get(nidx+1), nodeList.get(nidx)))
-                continue;
-            
             // Update particles
             double sumOfWeights = 0.0;
             for (int p=0; p<nParticles; p++) {
                 
-                double newWeight = updateParticle(particleStates[p], t, nodesInvolved);
+                double newWeight = updateParticle(particleStates[p], t, node);
                 
                 particleWeights[p] = newWeight;
                 sumOfWeights += newWeight;
@@ -166,9 +156,8 @@ public class TreeDensity extends Distribution {
             particleStatesNew = temp;
           
             // Update start interval time
-            t = model.getNodeTime(nodesInvolved.get(0));
+            t = model.getNodeTime(node);
 
-            nodesInvolved.clear();
         } 
 
         return logP;
@@ -181,16 +170,16 @@ public class TreeDensity extends Distribution {
      * @param startTime Time at the start of the interval.
      * @param lineages Number of ancestral lineages extant at the
      *                 start of the interval.
-     * @param nodesInvolved List of nodes involved in the reaction
-     *                      terminating the interval.
+     * @param node
+     * 
      * @return 
      */
     private double updateParticle(ParticleState particleState,
-        double startTime, List<TypedNode> nodesInvolved) {
+        double startTime, Node node) {
         double conditionalP = 1.0;
 
         double t = startTime;
-        double endTime = model.getNodeTime(nodesInvolved.get(0));
+        double endTime = model.getNodeTime(node);
 
         while (true) {
 

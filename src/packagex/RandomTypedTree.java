@@ -22,7 +22,7 @@ import beast.core.Input.Validate;
 /**
  * @author Tim Vaughan (tgvaughan@gmail.com)
  */
-public class RandomTypedTree extends TypedTree {
+public class RandomTypedTree extends ReactionTree {
 
     public Input<Model> modelInput = new Input<>(
         "model", "Model used in simulation", Validate.REQUIRED);

@@ -22,10 +22,10 @@ import beast.evolution.tree.Tree;
 /**
  * @author Tim Vaughan (tgvaughan@gmail.com)
  */
-public class TypedTree extends Tree {
+public class ReactionTree extends Tree {
 
     @Override
     protected Node newNode() {
-        return new TypedNode();
+        return new ReactionNode();
     }
 }
