@@ -47,7 +47,7 @@ public class Reaction extends BEASTObject {
         new Input<>("p2rMap", "Product to reactant map.");
 
     public Input<RealParameter> rateInput = new Input<>("rate",
-        "Constant reaction rate", Validate.REQUIRED);
+        "Constant reaction rate");
 
     protected Multiset<Type> reactants, products;
     protected Multimap<Type, Multiset<Type>> offspringMap;
@@ -106,7 +106,7 @@ public class Reaction extends BEASTObject {
      * @return True if reaction generates sampled lineages.
      */
     public boolean isSampleReaction() {
-        return deltas.containsKey(Type.SAMPLED);
+        return products.contains(Type.SAMPLED);
     }
 
     /**
@@ -144,7 +144,17 @@ public class Reaction extends BEASTObject {
      * @return reaction propensity
      */
     public double getPropensity(SystemState state) {
-        return getReactantPermutations(state)*rateInput.get().getValue();
+        if (rateInput.get() != null)
+            return getReactantPermutations(state)*rateInput.get().getValue();
+        else
+            return 0.0;
+    }
+
+    /**
+     * @return true if this reaction possesses a rate.
+     */
+    public boolean hasRate() {
+        return rateInput.get() != null;
     }
 
     public Multimap<Type, Multiset<Type>>  getOffspringMap() {
