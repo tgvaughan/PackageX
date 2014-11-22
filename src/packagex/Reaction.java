@@ -53,6 +53,8 @@ public class Reaction extends BEASTObject {
     protected Multimap<Type, Multiset<Type>> offspringMap;
     protected Map<Type, Integer> deltas;
 
+    protected boolean sampleReaction, coalescentReaction;
+
     @Override
     public void initAndValidate() {
 
@@ -100,13 +102,35 @@ public class Reaction extends BEASTObject {
             } else
                 deltas.put(type, delta);
         }
+
+        classifyReaction();
     }
 
     /**
-     * @return True if reaction generates sampled lineages.
+     * Classify reaction as sample-generating or coalescent-generating.
+     */
+    private void classifyReaction() {
+        sampleReaction =  products.contains(Type.SAMPLED);
+
+        coalescentReaction = false;
+        for (Multiset<Type> family : offspringMap.values()) {
+            if (family.size()>1)
+                coalescentReaction = true;
+        }
+    }
+
+    /**
+     * @return True if reaction generates samples.
      */
     public boolean isSampleReaction() {
-        return products.contains(Type.SAMPLED);
+        return sampleReaction;
+    }
+
+    /**
+     * @return True if reaction generates coalescences.
+     */
+    public boolean isCoalescentReaction() {
+        return coalescentReaction;
     }
 
     /**
