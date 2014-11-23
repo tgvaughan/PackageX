@@ -49,11 +49,16 @@ public class Model extends BEASTObject {
     public Input<Type> originTypeInput = new Input<>("originType",
             "Type of ancestral lineage at origin.", Validate.REQUIRED);
 
-    Map<Reaction, Double> reactionPropensities = new HashMap<>();
-    double totalReactionPropensity;
+    Map<Reaction.ReactionKind, Map<Reaction, Double>> reactionPropensities = new HashMap<>();
+    Map<Reaction.ReactionKind, Double> totalReactionPropensity = new HashMap<>();
 
     @Override
-    public void initAndValidate() throws Exception { }
+    public void initAndValidate() throws Exception {
+        for (Reaction.ReactionKind kind : Reaction.ReactionKind.values()) {
+            reactionPropensities.put(kind, new HashMap<>());
+            totalReactionPropensity.put(kind, 0.0);
+        }
+    }
 
     /**
      * @return a copy of the initial system state.
@@ -80,27 +85,39 @@ public class Model extends BEASTObject {
      * @param state system state
      */
     public void calculatePropensities(SystemState state) {
-        reactionPropensities.clear();
-        totalReactionPropensity = 0.0;
+        
+        for (Reaction.ReactionKind kind : Reaction.ReactionKind.values()) {
+            reactionPropensities.get(kind).clear();
+            totalReactionPropensity.put(kind, 0.0);
+        }
+
         for (Reaction react : reactionsInput.get()) {
             double thisProp = react.getPropensity(state);
-            reactionPropensities.put(react, thisProp);
-            totalReactionPropensity += thisProp;
+            reactionPropensities.get(react.getReactionKind()).put(react, thisProp);
+            totalReactionPropensity.put(react.getReactionKind(),
+                totalReactionPropensity.get(react.getReactionKind()) + thisProp);
         }
     }
 
     /**
-     * @return previously computed reaction propensities.
+     * Retrieve previously computed reaction propensities of a given kind.
+     * 
+     * @param kind kind of reaction
+     * @return map from reactions to propensities
      */
-    public Map<Reaction, Double> getPropensities() {
-        return reactionPropensities;
+    public Map<Reaction, Double> getPropensities(Reaction.ReactionKind kind) {
+        return reactionPropensities.get(kind);
     }
 
     /**
-     * @return total of previously computed reaction propensities.
+     * Retrieve total of previously computed reaction propensities of a
+     * given kind.
+     * 
+     * @param kind kind of reaction
+     * @return total propensity for reactions of this kind
      */
-    public double getTotalPropensity() {
-        return totalReactionPropensity;
+    public double getTotalPropensity(Reaction.ReactionKind kind) {
+        return totalReactionPropensity.get(kind);
     }
 
     /**

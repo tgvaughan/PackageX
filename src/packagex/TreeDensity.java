@@ -145,9 +145,6 @@ public class TreeDensity extends Distribution {
                         break;
                 }
                 
-                if (pChoice == nParticles)
-                    System.err.println("sumOfWeights: " + sumOfWeights);
-                
                 particleStatesNew[p].assignFrom(particleStates[pChoice]);
             }
             
@@ -158,7 +155,6 @@ public class TreeDensity extends Distribution {
           
             // Update start interval time
             t = model.getNodeTime(node);
-
         } 
 
         return logP;
