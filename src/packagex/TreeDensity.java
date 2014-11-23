@@ -215,11 +215,6 @@ public class TreeDensity extends Distribution {
             react.incrementState(particleState);
 
             // Evaluate probability that reaction affected tree
-            for (Type parentType : react.getOffspringMap().keySet()) {
-                for (Multiset<Type> family : react.getOffspringMap().get(parentType)) {
-                    
-                }
-            }
 
         }
 

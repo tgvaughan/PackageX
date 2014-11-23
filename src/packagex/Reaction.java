@@ -27,8 +27,10 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Multiset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A reaction involving individuals of different types.
@@ -43,94 +45,126 @@ public class Reaction extends BEASTObject {
     public Input<List<Type>> productsInput = new Input<>("product",
         "Product type", new ArrayList<>());
 
-    public Input<IntegerParameter> p2rMapInput =
-        new Input<>("p2rMap", "Product to reactant map.");
+    public Input<List<Integer>> p2rMapInput =
+        new Input<>("p2rMap", "Product to reactant map.", new ArrayList<>());
 
     public Input<RealParameter> rateInput = new Input<>("rate",
         "Constant reaction rate");
 
-    protected Multiset<Type> reactants, products;
-    protected Multimap<Type, Multiset<Type>> offspringMap;
-    protected Map<Type, Integer> deltas;
+    public class Nodule {
+        public Type type;
 
-    protected boolean sampleReaction, coalescentReaction;
+        public Type getType() {
+            return type;
+        }
+    }
+
+    public class ReactantNodule extends Nodule {
+        public Set<ProductNodule> children = new HashSet<>();
+
+        public ReactantNodule(Type type) {
+            this.type = type;
+        }
+
+        public void addChild(ProductNodule child) {
+            children.add(child);
+            child.setParent(this);
+        }
+
+        public Set<ProductNodule> getChildren() {
+            return children;
+        }
+    }
+
+    public class ProductNodule extends Nodule {
+        public ReactantNodule parent = null;
+
+        public ProductNodule(Type type) {
+            this.type = type;
+        }
+
+        public void setParent(ReactantNodule parent) {
+            this.parent = parent;
+        }
+
+        public ReactantNodule getParent() {
+            return parent;
+        }
+    }
+
+    protected List<ReactantNodule> reactantNodules = new ArrayList<>();
+    protected List<ProductNodule> productNodules = new ArrayList<>();
+
+    protected Multiset<Type> reactants = HashMultiset.create();
+    protected Multiset<Type> products = HashMultiset.create();
+    protected Map<Type, Integer> deltas = new HashMap<>();
+
+    public enum ReactionKind { COALESCENCE, SAMPLE, OTHER };
+    protected ReactionKind reactionKind = ReactionKind.OTHER;
+    protected Type reactionParentType = null;
 
     @Override
     public void initAndValidate() {
 
-        reactants = HashMultiset.create();
         for (Type type : reactantsInput.get()) {
             reactants.add(type);
+            ReactantNodule reactNodule = new ReactantNodule(type);
+            reactantNodules.add(reactNodule);
         }
 
-        if (reactants.contains(Type.SAMPLED))
-            throw new IllegalArgumentException("Cannot use the Sampled type as a reactant.");
-
-        products = HashMultiset.create();
-        for (Type type : productsInput.get()) {
+        for (int idx=0; idx<productsInput.get().size(); idx++) {
+            Type type = productsInput.get().get(idx);
             products.add(type);
-        }
+            ProductNodule prodNodule = new ProductNodule(type);
 
-        Multimap<Integer, Type> idxMap = HashMultimap.create();
-        for (int i=0; i<productsInput.get().size(); i++) {
-            idxMap.put(p2rMapInput.get().getValue(i), productsInput.get().get(i));
-        }
-
-        offspringMap = HashMultimap.create();
-        for (int idx : idxMap.keySet()) {
-            Type reactant = reactantsInput.get().get(idx);
-            Multiset<Type> offspringSet = HashMultiset.create();
-            offspringSet.addAll(idxMap.get(idx));
-            offspringMap.put(reactant, offspringSet);
+            int mapIdx = p2rMapInput.get().get(idx);
+            if (mapIdx>=0) {
+                reactantNodules.get(mapIdx).addChild(prodNodule);
+            }
+            productNodules.add(prodNodule);
         }
 
         // Calculate deltas
-        deltas = new HashMap<>();
-        for (Type type : reactants.elementSet())
-            deltas.put(type, reactants.count(type));
+
+        for (Type type : reactants.elementSet()) {
+            deltas.put(type, -reactants.count(type));
+        }
 
         for (Type type : products.elementSet()) {
-            int delta = 0;
             if (deltas.containsKey(type))
-                delta = deltas.get(type);
+                deltas.put(type, deltas.get(type) + products.count(type));
+            else
+                deltas.put(type, products.count(type));
 
-            delta -= products.count(type);
-
-            if (delta==0) {
-                if (deltas.containsKey(type))
-                    deltas.remove(type);
-            } else
-                deltas.put(type, delta);
+            if (deltas.get(type) == 0)
+                deltas.remove(type);
         }
 
-        classifyReaction();
-    }
+        // Classify reaction as sample-generating or coalescent-generating.
 
-    /**
-     * Classify reaction as sample-generating or coalescent-generating.
-     */
-    private void classifyReaction() {
-        sampleReaction =  products.contains(Type.SAMPLED);
+        for (ReactantNodule reactNodule : reactantNodules) {
+            if (reactNodule.getChildren().size()>2) {
+                throw new IllegalArgumentException("Models may only create binary trees!");
+            }
 
-        coalescentReaction = false;
-        for (Multiset<Type> family : offspringMap.values()) {
-            if (family.size()>1)
-                coalescentReaction = true;
+            if (reactNodule.getChildren().size()==2)
+                reactionKind = ReactionKind.COALESCENCE;
+
+            for (ProductNodule prodNodule : reactNodule.getChildren()) {
+                if (prodNodule.getType() == Type.SAMPLED)
+                    reactionKind = ReactionKind.SAMPLE;
+            }
+
+            if (reactionKind != ReactionKind.OTHER)
+                break;
         }
     }
 
     /**
-     * @return True if reaction generates samples.
+     * @return Kind of this reaction.
      */
-    public boolean isSampleReaction() {
-        return sampleReaction;
-    }
-
-    /**
-     * @return True if reaction generates coalescences.
-     */
-    public boolean isCoalescentReaction() {
-        return coalescentReaction;
+    public ReactionKind getReactionKind() {
+        return reactionKind;
     }
 
     /**
@@ -179,10 +213,6 @@ public class Reaction extends BEASTObject {
      */
     public boolean hasRate() {
         return rateInput.get() != null;
-    }
-
-    public Multimap<Type, Multiset<Type>>  getOffspringMap() {
-        return offspringMap;
     }
 
     /**
