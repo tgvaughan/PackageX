@@ -24,8 +24,6 @@ import beast.evolution.tree.Node;
 import beast.util.Randomizer;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multiset;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -105,7 +103,10 @@ public class TreeDensity extends Distribution {
         // Initialize particles
         for (int p=0; p<nParticles; p++) {
             particleStates[p] = new ParticleState(model.getInitialState());
-            particleStatesNew[p] = new ParticleState(model.getInitialState());
+            particleStates[p].lineageTypes.put((ReactionNode) tree.getRoot(),
+                    model.getOriginType());
+
+            particleStatesNew[p] = new ParticleState();
         }
 
         // Assemble sorted node list:

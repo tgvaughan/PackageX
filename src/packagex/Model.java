@@ -46,19 +46,14 @@ public class Model extends BEASTObject {
     public Input<List<PopulationSize>> initialPopSizesInput = new Input<>(
         "initialPopSize", "Initial population size", new ArrayList<>());
 
-    public Input<List<Type>> originTypeInput = new Input<>("originType",
-            "Type of ancestral lineage at origin.", new ArrayList<>());
+    public Input<Type> originTypeInput = new Input<>("originType",
+            "Type of ancestral lineage at origin.", Validate.REQUIRED);
 
     Map<Reaction, Double> reactionPropensities = new HashMap<>();
     double totalReactionPropensity;
 
     @Override
-    public void initAndValidate() throws Exception {
-        if (originTypeInput.get().isEmpty()) {
-            throw new IllegalArgumentException("Must specify at least one"
-                    + " originType.");
-        }
-    }
+    public void initAndValidate() throws Exception { }
 
     /**
      * @return a copy of the initial system state.
@@ -70,6 +65,13 @@ public class Model extends BEASTObject {
             initialState.put(popSize.getType(), popSize.getSize());
 
         return initialState;
+    }
+
+    /**
+     * @return Ancestral type at origin.
+     */
+    public Type getOriginType() {
+        return originTypeInput.get();
     }
 
     /**
