@@ -101,7 +101,7 @@ public class Reaction extends BEASTObject {
 
     public enum ReactionKind { COALESCENCE, SAMPLE, OTHER };
     protected ReactionKind reactionKind = ReactionKind.OTHER;
-    protected Type reactionParentType = null;
+    protected ReactantNodule reactionParentNodule;
 
     @Override
     public void initAndValidate() {
@@ -151,20 +151,30 @@ public class Reaction extends BEASTObject {
                 reactionKind = ReactionKind.COALESCENCE;
 
             for (ProductNodule prodNodule : reactNodule.getChildren()) {
-                if (prodNodule.getType() == Type.SAMPLED)
+                if (prodNodule.getType() == Type.SAMPLED) {
                     reactionKind = ReactionKind.SAMPLE;
+                }
             }
 
-            if (reactionKind != ReactionKind.OTHER)
+            if (reactionKind != ReactionKind.OTHER) {
+                reactionParentNodule = reactNodule;
                 break;
+            }
         }
     }
 
     /**
-     * @return Kind of this reaction.
+     * @return Kind of this reaction in terms of effect on tree.
      */
     public ReactionKind getReactionKind() {
         return reactionKind;
+    }
+
+    /**
+     * @return Reactant nodule for reactions capable of modifying tree.
+     */
+    public ReactantNodule getReactionParentNodule() {
+        return reactionParentNodule;
     }
 
     /**
