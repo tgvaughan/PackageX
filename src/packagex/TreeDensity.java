@@ -182,30 +182,60 @@ public class TreeDensity extends Distribution {
 
             // Calculate reaction propensities
             model.calculatePropensities(particleState);
+
+            double totalNSProp = model.getTotalPropensity(Reaction.ReactionKind.COALESCENCE)
+                    + model.getTotalPropensity(Reaction.ReactionKind.OTHER);
             
             // Increment time
-            if (model.getTotalPropensity()>0.0)
-                t += Randomizer.nextExponential(model.getTotalPropensity());
+            double dt;
+            if (totalNSProp>0.0)
+                dt = Randomizer.nextExponential(totalNSProp);
             else
-                t = Double.POSITIVE_INFINITY;
+                dt = Double.POSITIVE_INFINITY;
+
+            // Update weight
+            conditionalP *= Math.exp(-Math.min(dt,endTime-t)
+                    *model.getTotalPropensity(Reaction.ReactionKind.SAMPLE));
+
+            t += dt;
 
             // Stop if t>endTime
             if (t>endTime)
                 break;
 
             // Choose reaction:
-            double u = Randomizer.nextDouble()*model.getTotalPropensity();
+            double u = Randomizer.nextDouble()*totalNSProp;
+
             Reaction react = null;
-            for (Reaction thisReact : model.getPropensities().keySet()) {
-                u -= model.getPropensities().get(thisReact);
-                if (u<0) {
-                    react = thisReact;
-                    break;
+            if (u<model.getTotalPropensity(Reaction.ReactionKind.OTHER)) {
+                for (Reaction thisReact : model.getPropensities(Reaction.ReactionKind.OTHER).keySet()) {
+                    u -= model.getPropensities(Reaction.ReactionKind.OTHER).get(thisReact);
+                    if (u<0) {
+                        react = thisReact;
+                        break;
+                    }
+                }
+            } else {
+                for (Reaction thisReact : model.getPropensities(Reaction.ReactionKind.COALESCENCE).keySet()) {
+                    u -= model.getPropensities(Reaction.ReactionKind.COALESCENCE).get(thisReact);
+                    if (u<0) {
+                        react = thisReact;
+                        break;
+                    }
+
                 }
             }
 
             if (react == null)
                 throw new IllegalStateException("Reaction-choosing loop fell through!");
+
+
+            if (react.getReactionKind() == Reaction.ReactionKind.COALESCENCE) {
+                react.incrementState(particleState);
+
+            } else {
+
+            }
 
             // Implement state change
             react.incrementState(particleState);
