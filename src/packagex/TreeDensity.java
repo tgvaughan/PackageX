@@ -22,7 +22,9 @@ import beast.core.Input.Validate;
 import beast.core.State;
 import beast.evolution.tree.Node;
 import beast.util.Randomizer;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Multiset;
 import java.util.HashMap;
 import java.util.List;
@@ -64,7 +66,7 @@ public class TreeDensity extends Distribution {
     }
 
     private class ParticleState extends SystemState {
-        public Map<ReactionNode, Type> lineageTypes = new HashMap<>();
+        public Multimap<Type, ReactionNode> lineageTypes = HashMultimap.create();
 
         public ParticleState() { }
 
@@ -103,8 +105,8 @@ public class TreeDensity extends Distribution {
         // Initialize particles
         for (int p=0; p<nParticles; p++) {
             particleStates[p] = new ParticleState(model.getInitialState());
-            particleStates[p].lineageTypes.put((ReactionNode) tree.getRoot(),
-                    model.getOriginType());
+            particleStates[p].lineageTypes.put(model.getOriginType(),
+                (ReactionNode) tree.getRoot());
 
             particleStatesNew[p] = new ParticleState();
         }
@@ -183,65 +185,37 @@ public class TreeDensity extends Distribution {
             // Calculate reaction propensities
             model.calculatePropensities(particleState);
 
-            double totalNSProp = model.getTotalPropensity(Reaction.ReactionKind.COALESCENCE)
-                    + model.getTotalPropensity(Reaction.ReactionKind.OTHER);
-            
             // Increment time
-            double dt;
-            if (totalNSProp>0.0)
-                dt = Randomizer.nextExponential(totalNSProp);
+            if (model.getTotalPropensity()>0.0)
+                t += Randomizer.nextExponential(model.getTotalPropensity());
             else
-                dt = Double.POSITIVE_INFINITY;
-
-            // Update weight
-            conditionalP *= Math.exp(-Math.min(dt,endTime-t)
-                    *model.getTotalPropensity(Reaction.ReactionKind.SAMPLE));
-
-            t += dt;
+                t = Double.POSITIVE_INFINITY;
 
             // Stop if t>endTime
             if (t>endTime)
                 break;
 
             // Choose reaction:
-            double u = Randomizer.nextDouble()*totalNSProp;
+            double u = Randomizer.nextDouble()*model.getTotalPropensity();
 
             Reaction react = null;
-            if (u<model.getTotalPropensity(Reaction.ReactionKind.OTHER)) {
-                for (Reaction thisReact : model.getPropensities(Reaction.ReactionKind.OTHER).keySet()) {
-                    u -= model.getPropensities(Reaction.ReactionKind.OTHER).get(thisReact);
-                    if (u<0) {
-                        react = thisReact;
-                        break;
-                    }
-                }
-            } else {
-                for (Reaction thisReact : model.getPropensities(Reaction.ReactionKind.COALESCENCE).keySet()) {
-                    u -= model.getPropensities(Reaction.ReactionKind.COALESCENCE).get(thisReact);
-                    if (u<0) {
-                        react = thisReact;
-                        break;
-                    }
-
+            for (Reaction thisReact : model.getPropensities().keySet()) {
+                u -= model.getPropensities().get(thisReact);
+                if (u<0) {
+                    react = thisReact;
+                    break;
                 }
             }
 
             if (react == null)
                 throw new IllegalStateException("Reaction-choosing loop fell through!");
 
-
-            if (react.getReactionKind() == Reaction.ReactionKind.COALESCENCE) {
-                react.incrementState(particleState);
-
-            } else {
-
-            }
-
             // Implement state change
             react.incrementState(particleState);
 
-            // Evaluate probability that reaction affected tree
+            // Randomly associate individuals with reactants.
 
+            // Evaluate probability that reaction affected tree
         }
 
         // Incorporate probability density of population event at time of
