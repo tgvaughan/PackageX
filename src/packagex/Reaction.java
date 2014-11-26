@@ -99,8 +99,6 @@ public class Reaction extends BEASTObject {
     protected Multiset<Type> products = HashMultiset.create();
     protected Map<Type, Integer> deltas = new HashMap<>();
 
-    public enum ReactionKind { COALESCENCE, SAMPLE, OTHER };
-    protected ReactionKind reactionKind = ReactionKind.OTHER;
     protected ReactantNodule reactionParentNodule;
 
     @Override
@@ -140,41 +138,6 @@ public class Reaction extends BEASTObject {
                 deltas.remove(type);
         }
 
-        // Classify reaction as sample-generating or coalescent-generating.
-
-        for (ReactantNodule reactNodule : reactantNodules) {
-            if (reactNodule.getChildren().size()>2) {
-                throw new IllegalArgumentException("Models may only create binary trees!");
-            }
-
-            if (reactNodule.getChildren().size()==2)
-                reactionKind = ReactionKind.COALESCENCE;
-
-            for (ProductNodule prodNodule : reactNodule.getChildren()) {
-                if (prodNodule.getType() == Type.SAMPLED) {
-                    reactionKind = ReactionKind.SAMPLE;
-                }
-            }
-
-            if (reactionKind != ReactionKind.OTHER) {
-                reactionParentNodule = reactNodule;
-                break;
-            }
-        }
-    }
-
-    /**
-     * @return Kind of this reaction in terms of effect on tree.
-     */
-    public ReactionKind getReactionKind() {
-        return reactionKind;
-    }
-
-    /**
-     * @return Reactant nodule for reactions capable of modifying tree.
-     */
-    public ReactantNodule getReactionParentNodule() {
-        return reactionParentNodule;
     }
 
     /**
